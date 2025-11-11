@@ -1,7 +1,10 @@
 // js/app.js
-// Final app.js — continuous-phase BPSK (global carrier) + clean per-bit FSK + demodulators + plotting
+// Complete app.js — shows Input (NRZ), Carrier, Modulated, Demodulated for BPSK & FSK
+// - BPSK: continuous carrier cos(2πfc t), mod = ±1 * carrier, coherent demod
+// - FSK: textbook per-bit sinusoid (each bit restarts phase), mod = amp * carrier, correlation demod
+// - Adds vertical bit-boundary markers on plots for clarity
 
-// ---------- Utilities ----------
+// ------------------ Utilities ------------------
 function linspace(a, b, n) {
   const out = [];
   if (n <= 1) { out.push(a); return out; }
@@ -38,34 +41,41 @@ function movingAverage(arr, window) {
   return out;
 }
 
-// ---------- SIGNAL GENERATION ----------
+// clamp helper
+function clampInt(v, minVal) { return Math.max(minVal, Math.floor(v)); }
 
-// BPSK: continuous carrier across entire signal (carrier = cos(2πfc t)), baseband NRZ = ±1 (multiplied by amp)
+// ------------------ Signal Generators ------------------
+
+// BPSK: continuous carrier across entire duration, baseband NRZ ±1 (amplitude applied)
 function genBPSK(bits, amp, fc, fs, duration) {
   const N = Math.max(1, Math.floor(fs * duration));
   const samplesPerBit = Math.max(1, Math.floor(N / bits.length));
   const t = linspace(0, duration, N);
 
   // baseband NRZ ±1 repeated
-  const baseRaw = repeatBitsToSamples(bits, samplesPerBit);
+  const raw = repeatBitsToSamples(bits, samplesPerBit);
   const baseband = new Array(N);
   for (let i = 0; i < N; i++) {
-    const b = baseRaw[i] === undefined ? bits[bits.length - 1] : baseRaw[i];
+    const b = raw[i] === undefined ? bits[bits.length - 1] : raw[i];
     baseband[i] = (b ? 1 : -1) * amp;
   }
 
   // continuous carrier cos(2π f t)
-  const carrier = new Array(N);
-  for (let i = 0; i < N; i++) carrier[i] = Math.cos(2 * Math.PI * fc * t[i]);
+  const carrier = t.map(tt => Math.cos(2 * Math.PI * fc * tt));
 
   // modulated
   const mod = new Array(N);
   for (let i = 0; i < N; i++) mod[i] = baseband[i] * carrier[i];
 
-  return { t, baseband, carrier, mod, samplesPerBit };
+  // bit boundaries times
+  const bitDur = duration / bits.length;
+  const boundaries = [];
+  for (let b = 0; b <= bits.length; b++) boundaries.push(b * bitDur);
+
+  return { t, baseband, carrier, mod, samplesPerBit, bitDur, boundaries };
 }
 
-// FSK: generate perfect sinusoid for each bit (restart phase per bit so each bit shows textbook sine)
+// FSK: textbook per-bit sinusoid (phase restarts each bit) — clean visual per-bit sine
 function genFSK(bits, amp, f0, f1, fs, duration) {
   const N = Math.max(1, Math.floor(fs * duration));
   const samplesPerBit = Math.max(1, Math.floor(N / bits.length));
@@ -77,17 +87,18 @@ function genFSK(bits, amp, f0, f1, fs, duration) {
 
   for (let b = 0; b < bits.length; b++) {
     const f = bits[b] ? f1 : f0;
-    for (let k = 0; k < samplesPerBit; k++) {
-      const i = b * samplesPerBit + k;
-      if (i >= N) break;
-      const tt = k / fs; // restart phase at each bit start (tt from 0 to bit-length/fs)
-      carrier[i] = Math.cos(2 * Math.PI * f * tt);
-      mod[i] = amp * carrier[i];
+    const start = b * samplesPerBit;
+    const end = Math.min(N, (b + 1) * samplesPerBit);
+    for (let i = start; i < end; i++) {
+      const local_t = (i - start) / fs; // restart phase at each bit start
+      const val = Math.cos(2 * Math.PI * f * local_t);
+      carrier[i] = val;
+      mod[i] = amp * val;
       baseband[i] = bits[b] ? amp : -amp;
     }
   }
 
-  // if N longer than bits*samplesPerBit, fill remaining with last bit's values
+  // fill any leftover samples if N > bits*samplesPerBit
   const lastIdx = Math.min(N - 1, bits.length * samplesPerBit - 1);
   for (let i = bits.length * samplesPerBit; i < N; i++) {
     carrier[i] = carrier[lastIdx];
@@ -95,12 +106,16 @@ function genFSK(bits, amp, f0, f1, fs, duration) {
     baseband[i] = baseband[lastIdx] || (bits[bits.length - 1] ? amp : -amp);
   }
 
-  return { t, baseband, carrier, mod, samplesPerBit, f0, f1 };
+  const bitDur = duration / bits.length;
+  const boundaries = [];
+  for (let b = 0; b <= bits.length; b++) boundaries.push(b * bitDur);
+
+  return { t, baseband, carrier, mod, samplesPerBit, bitDur, boundaries };
 }
 
-// ---------- DEMODULATORS ----------
+// ------------------ Demodulators ------------------
 
-// Coherent BPSK demod: multiply by local cos(2πfc t) then low-pass (moving average over bit) and threshold
+// BPSK coherent demod: multiply by local cos(2πfc t), low-pass (moving average), threshold per bit
 function demodBPSK(modSignal, fc, fs, samplesPerBit) {
   const N = modSignal.length;
   const t = linspace(0, N / fs, N);
@@ -111,7 +126,6 @@ function demodBPSK(modSignal, fc, fs, samplesPerBit) {
   const numBits = Math.floor(N / samplesPerBit);
   const demodBits = [];
   const recon = new Array(N).fill(0);
-
   for (let b = 0; b < numBits; b++) {
     const start = b * samplesPerBit;
     const mid = Math.min(N - 1, start + Math.floor(samplesPerBit / 2));
@@ -123,7 +137,7 @@ function demodBPSK(modSignal, fc, fs, samplesPerBit) {
   return { mixed, lp, demodBits, recon };
 }
 
-// FSK demod: correlate/energy per bit interval with cosines at f0 and f1 (choose larger)
+// FSK demod: correlate received signal with cos(2π f0 t) & cos(2π f1 t) over each bit interval
 function demodFSK(modSignal, f0, f1, fs, samplesPerBit) {
   const N = modSignal.length;
   const t = linspace(0, N / fs, N);
@@ -147,28 +161,43 @@ function demodFSK(modSignal, f0, f1, fs, samplesPerBit) {
   return { decisions, recon };
 }
 
-// ---------- PLOTTING ----------
-function plotFour(t, traces, title) {
-  // traces: array of 4 {y, name}
+// ------------------ Plotting (4 stacked subplots + bit boundary lines) ------------------
+function plotFour(t, traces, boundaries, title) {
+  // traces: [{y,name,color}, ...] length 4
   const data = [];
   for (let i = 0; i < 4; i++) {
     data.push({
       x: t,
       y: traces[i].y,
-      name: traces[i].name,
+      name: traces[i].name || '',
       xaxis: 'x' + (i + 1),
       yaxis: 'y' + (i + 1),
       mode: 'lines',
-      line: { width: 2 }
+      line: { width: 2, color: traces[i].color || undefined }
     });
   }
+
+  // shapes for bit boundaries (vertical lines)
+  const shapes = [];
+  for (let i = 0; i < boundaries.length; i++) {
+    const x = boundaries[i];
+    shapes.push({
+      type: 'line',
+      x0: x, x1: x, yref: 'paper', y0: 0, y1: 1,
+      line: { color: '#888', width: 1, dash: 'dot' },
+      opacity: 0.35
+    });
+  }
+
   const layout = {
     title: title,
     grid: { rows: 4, columns: 1, pattern: 'independent' },
     height: 760,
-    margin: { t: 70, l: 70, r: 30, b: 70 },
+    margin: { t: 60, l: 70, r: 30, b: 60 },
+    shapes: shapes,
     showlegend: true
   };
+
   layout['yaxis1'] = { title: 'Input (NRZ ±1)', range: [-1.5, 1.5] };
   layout['yaxis2'] = { title: 'Carrier' };
   layout['yaxis3'] = { title: 'Modulated' };
@@ -178,7 +207,7 @@ function plotFour(t, traces, title) {
   Plotly.react('plotArea', data, layout, { responsive: true });
 }
 
-// ---------- UI wiring ----------
+// ------------------ UI Wiring ------------------
 const expSelect = document.getElementById('experimentSelect');
 const controlsArea = document.getElementById('controlsArea');
 const btnRun = document.getElementById('btnRun');
@@ -226,37 +255,39 @@ btnRandomBits.addEventListener('click', () => {
   if (f) f.value = bits;
 });
 
-// Main generation + demodulate
+// Main run
 btnRun.addEventListener('click', () => {
   const ex = expSelect.value;
-  const amp = Number(document.getElementById('amp').value);
-  const fs = Math.max(100, Number(document.getElementById('fs').value));
-  const dur = Math.max(0.001, Number(document.getElementById('duration').value));
+  const amp = Number(document.getElementById('amp').value) || 1;
+  const fs = clampInt(Number(document.getElementById('fs').value) || 1000, 100);
+  const dur = Math.max(0.001, Number(document.getElementById('duration').value) || 0.1);
   const bits = parseBits(document.getElementById('bits').value);
 
   if (ex === 'bpsk') {
-    const fc = Number(document.getElementById('fc').value);
-    const { t, baseband, carrier, mod, samplesPerBit } = genBPSK(bits, amp, fc, fs, dur);
+    const fc = Number(document.getElementById('fc').value) || 10;
+    const { t, baseband, carrier, mod, samplesPerBit, boundaries } = genBPSK(bits, amp, fc, fs, dur);
     const dem = demodBPSK(mod, fc, fs, samplesPerBit);
+
     const traces = [
-      { y: baseband, name: 'Input (NRZ ±1)' },
-      { y: carrier, name: `Carrier ${fc} Hz` },
-      { y: mod, name: 'BPSK Modulated' },
-      { y: dem.recon, name: 'Demodulated (NRZ decision)' }
+      { y: baseband, name: 'Input (NRZ ±1)', color: '#1f77b4' },
+      { y: carrier, name: `Carrier ${fc} Hz`, color: '#ff7f0e' },
+      { y: mod, name: 'BPSK Modulated', color: '#2ca02c' },
+      { y: dem.recon, name: 'Demodulated (NRZ)', color: '#d62728' }
     ];
-    plotFour(t, traces, `BPSK — fc=${fc}Hz, fs=${fs}Hz`);
+    plotFour(t, traces, boundaries, `BPSK — fc=${fc}Hz, fs=${fs}Hz`);
   } else {
-    const f0 = Number(document.getElementById('f0').value);
-    const f1 = Number(document.getElementById('f1').value);
-    const { t, baseband, carrier, mod, samplesPerBit } = genFSK(bits, amp, f0, f1, fs, dur);
+    const f0 = Number(document.getElementById('f0').value) || 8;
+    const f1 = Number(document.getElementById('f1').value) || 12;
+    const { t, baseband, carrier, mod, samplesPerBit, boundaries } = genFSK(bits, amp, f0, f1, fs, dur);
     const dem = demodFSK(mod, f0, f1, fs, samplesPerBit);
+
     const traces = [
-      { y: baseband, name: 'Input (NRZ ±1)' },
-      { y: carrier, name: `Carrier (f0/f1)` },
-      { y: mod, name: 'FSK Modulated' },
-      { y: dem.recon, name: 'Demodulated (NRZ decision)' }
+      { y: baseband, name: 'Input (NRZ ±1)', color: '#1f77b4' },
+      { y: carrier, name: `Carrier (f0/f1)`, color: '#ff7f0e' },
+      { y: mod, name: 'FSK Modulated', color: '#2ca02c' },
+      { y: dem.recon, name: 'Demodulated (NRZ)', color: '#d62728' }
     ];
-    plotFour(t, traces, `FSK — f0=${f0}Hz / f1=${f1}Hz, fs=${fs}Hz`);
+    plotFour(t, traces, boundaries, `FSK — f0=${f0}Hz / f1=${f1}Hz, fs=${fs}Hz`);
   }
 });
 
