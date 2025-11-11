@@ -58,40 +58,30 @@ function genBPSK(bits, amp, fc, fs, duration) {
   return { t, baseband, carrier, mod, samplesPerBit };
 }
 
-// ---------- FSK (continuous phase across bits) ----------
+// FSK: separate sinusoidal waves per bit (perfect textbook style)
 function genFSK(bits, amp, f0, f1, fs, duration) {
   const N = Math.floor(fs * duration);
-  const samplesPerBit = Math.max(1, Math.floor(N / bits.length));
+  const samplesPerBit = Math.floor(N / bits.length);
   const t = linspace(0, duration, N);
-  const baseband = repeatBitsToSamples(bits, samplesPerBit).map(b => b ? 1 : -1).map(x => x * amp);
 
+  const baseband = repeatBitsToSamples(bits, samplesPerBit).map(b => b ? 1 : -1);
   const carrier = new Array(N);
   const mod = new Array(N);
-  let phase = 0;
 
   for (let b = 0; b < bits.length; b++) {
     const f = bits[b] ? f1 : f0;
-    const step = 2 * Math.PI * f / fs;
     for (let k = 0; k < samplesPerBit; k++) {
       const i = b * samplesPerBit + k;
       if (i >= N) break;
-      // accumulate phase to keep continuity
-      phase += step;
-      carrier[i] = Math.cos(phase);
+      const tt = (k / fs); // restart phase at each bit
+      carrier[i] = Math.cos(2 * Math.PI * f * tt);
       mod[i] = amp * carrier[i];
-    }
-  }
-  // If N not exactly divisible, fill remaining samples with last frequency
-  for (let i = 0; i < N; i++) {
-    if (carrier[i] === undefined) {
-      carrier[i] = Math.cos(phase);
-      mod[i] = amp * carrier[i];
-      phase += 2 * Math.PI * f0 / fs; // arbitrary continuation
     }
   }
 
   return { t, baseband, carrier, mod, samplesPerBit, f0, f1 };
 }
+
 
 // ---------- Demodulators ----------
 // BPSK coherent demod: multiply by local carrier (same fc), low-pass by moving average, decision per bit
@@ -265,3 +255,4 @@ btnRun.addEventListener('click', () => {
 
 // Initial run
 window.addEventListener('load', () => { btnRun.click(); });
+
