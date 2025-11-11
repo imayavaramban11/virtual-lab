@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Digital Comm Virtual Lab — Input/Carrier/Modulated/Demodulated</title>
+
+  <!-- Plotly -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <header>
+    <h1>Digital Communication Virtual Lab</h1>
+    <p>Shows: Input (baseband), Carrier, Modulated, Demodulated signals</p>
+  </header>
+
+  <div class="container">
+    <aside class="panel">
+      <h3>Experiment</h3>
+      <select id="experimentSelect">
+        <option value="bpsk">BPSK (with demod)</option>
+        <option value="fsk">FSK (with demod)</option>
+      </select>
+
+      <div id="controlsArea"></div>
+
+      <div class="actions">
+        <button id="btnRun">Generate & Demodulate</button>
+        <button id="btnRandomBits">Random Bits</button>
+      </div>
+
+      <div class="notes">
+        <p class="small">Demodulation uses simple coherent method for BPSK and energy-detection for FSK over each bit interval.</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div id="plotArea"></div>
+    </main>
+  </div>
+
+  <footer>
+    <p>© 2025 Virtual Lab — Plotly.js</p>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

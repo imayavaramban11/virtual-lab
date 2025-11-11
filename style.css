@@ -1,0 +1,16 @@
+:root{
+  --bg:#f5f7fb; --panel:#fff; --accent:#0b5cff; --muted:#555;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:#111}
+header{background:var(--accent);color:#fff;padding:18px;text-align:center}
+.container{display:flex;gap:16px;padding:18px;max-width:1200px;margin:18px auto}
+.panel{width:320px;background:var(--panel);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(10,20,40,0.06)}
+.main{flex:1;background:var(--panel);padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(10,20,40,0.04)}
+label{display:block;margin-top:10px;font-weight:600}
+input,select{width:100%;padding:8px;border-radius:8px;border:1px solid #e6eef7}
+.actions{display:flex;gap:8px;margin-top:12px}
+button{padding:8px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer}
+button#btnRandomBits{background:#2f9e44}
+.small{font-size:12px;color:var(--muted)}
+#plotArea{width:100%;height:650px}
