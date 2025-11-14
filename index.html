@@ -1,48 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Digital Comm Virtual Lab — Input/Carrier/Modulated/Demodulated</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Digital Communication Virtual Lab</title>
 
-  <!-- Plotly -->
+  <!-- Plotly CDN -->
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
-  <link rel="stylesheet" href="style.css"/>
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>Digital Communication Virtual Lab</h1>
-    <p>Shows: Input (baseband), Carrier, Modulated, Demodulated (BPSK & FSK)</p>
+  <header class="site-header">
+    <div class="top-left">
+      <img src="" alt="" id="collegeLogo" style="display:none;height:48px;margin-right:12px"/>
+      <div>
+        <div class="college">[Your College Name]</div>
+        <div class="dept">Department of Electronics & Communication</div>
+        <div class="lab">Digital Communication Virtual Lab</div>
+      </div>
+    </div>
+    <div class="top-right small">Designed for learning & labs — Add experiments via js/app.js</div>
   </header>
 
-  <div class="container">
-    <aside class="panel">
-      <h3>Experiment</h3>
-      <select id="experimentSelect">
-        <option value="bpsk">BPSK (with demod)</option>
-        <option value="fsk">FSK (with demod)</option>
+  <div class="page">
+    <aside class="sidebar card">
+      <h2>Experiment</h2>
+      <select id="experimentSelect" class="full">
+        <option value="bpsk">BPSK (Mod/Demod + Constellation)</option>
+        <option value="fsk">FSK (Mod/Demod + Constellation)</option>
+        <!-- Add future experiments here -->
       </select>
 
-      <div id="controlsArea"></div>
+      <div id="controlsArea" class="controls"></div>
 
       <div class="actions">
-        <button id="btnRun">Generate & Demodulate</button>
-        <button id="btnRandomBits">Random Bits</button>
+        <button id="btnRun" class="btn primary">Generate & Demodulate</button>
+        <button id="btnRandomBits" class="btn green">Random Bits</button>
+        <button id="btnDownload" class="btn">Download CSV</button>
       </div>
 
-      <div class="notes">
-        <p class="small">Demodulation: coherent for BPSK (assumes phase-aligned LO), energy/correlation for FSK.</p>
-      </div>
+      <hr>
+      <div id="infoBox" class="info small"></div>
     </aside>
 
     <main class="main">
-      <div id="plotArea"></div>
+      <div class="row">
+        <div class="card" style="flex:1">
+          <div id="plotArea"></div>
+        </div>
+        <div class="card" style="width:360px;">
+          <h3>Constellation</h3>
+          <div id="constellation" style="height:360px"></div>
+          <hr/>
+          <h3>Theory</h3>
+          <div id="theory" class="doc small"></div>
+          <hr/>
+          <h3>Procedure</h3>
+          <div id="procedure" class="doc small"></div>
+        </div>
+      </div>
     </main>
   </div>
 
-  <footer>
-    <p>© 2025 Virtual Lab — Plotly.js</p>
+  <footer class="site-footer">
+    © 2025 [Your College Name] — Digital Communication Virtual Lab
   </footer>
 
   <script src="js/app.js"></script>
