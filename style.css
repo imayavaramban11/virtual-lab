@@ -1,16 +1,30 @@
 :root{
-  --bg:#f5f7fb; --panel:#fff; --accent:#0b5cff; --muted:#555;
+  --bg:#f5f7fb; --card:#fff; --accent:#0b5cff; --muted:#666;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:#111}
-header{background:var(--accent);color:#fff;padding:18px;text-align:center}
-.container{display:flex;gap:16px;padding:18px;max-width:1200px;margin:18px auto}
-.panel{width:320px;background:var(--panel);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(10,20,40,0.06)}
-.main{flex:1;background:var(--panel);padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(10,20,40,0.04)}
-label{display:block;margin-top:10px;font-weight:600}
-input,select{width:100%;padding:8px;border-radius:8px;border:1px solid #e6eef7}
+body{margin:0;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;background:var(--bg);color:#111}
+.site-header{display:flex;justify-content:space-between;align-items:center;padding:18px 28px;background:var(--accent);color:white}
+.site-header .college{font-weight:700;font-size:20px}
+.site-header .dept{font-size:14px;opacity:0.95}
+.site-header .lab{font-size:13px;opacity:0.95}
+.page{display:flex;gap:18px;padding:18px;max-width:1300px;margin:18px auto}
+.sidebar{width:320px;padding:16px;border-radius:12px;background:var(--card);box-shadow:0 6px 18px rgba(10,20,40,0.06)}
+.main{flex:1}
+.card{background:var(--card);padding:12px;border-radius:12px;box-shadow:0 6px 18px rgba(10,20,40,0.04)}
+.controls label{display:block;margin-top:12px;font-weight:600}
+.controls input, .controls select{width:100%;padding:8px;border-radius:8px;border:1px solid #e6eef7;margin-top:6px}
 .actions{display:flex;gap:8px;margin-top:12px}
-button{padding:8px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer}
-button#btnRandomBits{background:#2f9e44}
-.small{font-size:12px;color:var(--muted)}
-#plotArea{width:100%;height:700px}
+.btn{padding:8px 12px;border-radius:8px;border:none;cursor:pointer;background:#e6eef7}
+.btn.primary{background:var(--accent);color:white}
+.btn.green{background:#2f9e44;color:white}
+.small{font-size:13px;color:var(--muted)}
+.info{margin-top:10px;font-size:13px;color:var(--muted)}
+.row{display:flex;gap:18px}
+.doc{max-height:220px;overflow:auto}
+.site-footer{text-align:center;padding:10px;color:var(--muted);font-size:13px}
+#plotArea{height:700px}
+@media (max-width:1000px){
+  .page{flex-direction:column}
+  .sidebar{width:auto}
+  #plotArea{height:520px}
+}
