@@ -1,72 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Digital Communication Virtual Lab</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Digital Communication Virtual Lab — BPSK & FSK</title>
 
-  <!-- Plotly CDN -->
+  <!-- Plotly -->
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <header class="site-header">
-    <div class="top-left">
-      <img src="" alt="" id="collegeLogo" style="display:none;height:48px;margin-right:12px"/>
-      <div>
-        <div class="college">[Your College Name]</div>
-        <div class="dept">Department of Electronics & Communication</div>
-        <div class="lab">Digital Communication Virtual Lab</div>
-      </div>
+  <div class="header">
+    <div class="header-left">
+      <div class="college">Your College Name</div>
+      <div class="department">Department of Electronics & Communication</div>
+      <div class="lab">Digital Communication Virtual Lab</div>
     </div>
-    <div class="top-right small">Designed for learning & labs — Add experiments via js/app.js</div>
-  </header>
+    <div class="header-right small">Interactive simulations: BPSK & FSK — Modulate / Demodulate / Constellation</div>
+  </div>
 
-  <div class="page">
+  <div class="main-container">
     <aside class="sidebar card">
-      <h2>Experiment</h2>
+      <h3>Experiment</h3>
       <select id="experimentSelect" class="full">
-        <option value="bpsk">BPSK (Mod/Demod + Constellation)</option>
-        <option value="fsk">FSK (Mod/Demod + Constellation)</option>
-        <!-- Add future experiments here -->
+        <option value="bpsk">BPSK (Mod/Demod)</option>
+        <option value="fsk">FSK (Mod/Demod)</option>
       </select>
 
       <div id="controlsArea" class="controls"></div>
 
-      <div class="actions">
-        <button id="btnRun" class="btn primary">Generate & Demodulate</button>
-        <button id="btnRandomBits" class="btn green">Random Bits</button>
-        <button id="btnDownload" class="btn">Download CSV</button>
+      <div class="btn-row">
+        <button id="btnGenerate" class="btn btn-primary">Generate</button>
+        <button id="btnRun" class="btn btn-success">Run</button>
+        <button id="btnRandom" class="btn btn-secondary">Random Bits</button>
       </div>
 
-      <hr>
-      <div id="infoBox" class="info small"></div>
+      <div class="small note">
+        <p>Tip: set <strong>Sample rate</strong> much higher than carrier (e.g., fs ≥ 100 × fc) for smooth sine plots.</p>
+        <p>Use Bit rate to control bit duration (duration = bits.length / bitRate).</p>
+      </div>
+
+      <hr/>
+      <div class="small">
+        <h4>Theory</h4>
+        <div id="miniTheory"></div>
+      </div>
     </aside>
 
     <main class="main">
-      <div class="row">
-        <div class="card" style="flex:1">
-          <div id="plotArea"></div>
+      <div class="card">
+        <div class="row">
+          <div class="col" style="flex:1">
+            <div class="plot-title">Input (NRZ)</div>
+            <div id="plotInput" style="height:200px"></div>
+          </div>
+          <div class="col" style="flex:1">
+            <div class="plot-title">Carrier</div>
+            <div id="plotCarrier" style="height:200px"></div>
+          </div>
         </div>
-        <div class="card" style="width:360px;">
-          <h3>Constellation</h3>
-          <div id="constellation" style="height:360px"></div>
-          <hr/>
-          <h3>Theory</h3>
-          <div id="theory" class="doc small"></div>
-          <hr/>
-          <h3>Procedure</h3>
-          <div id="procedure" class="doc small"></div>
+
+        <div class="row" style="margin-top:12px">
+          <div class="col" style="flex:1">
+            <div class="plot-title">Modulated Signal</div>
+            <div id="plotMod" style="height:220px"></div>
+          </div>
+          <div class="col" style="flex:1">
+            <div class="plot-title">Demodulated (NRZ Decision)</div>
+            <div id="plotDemod" style="height:220px"></div>
+          </div>
         </div>
+
+        <div class="row" style="margin-top:12px">
+          <div class="col" style="flex:1">
+            <div class="plot-title">Constellation / Energy Scatter</div>
+            <div id="plotConst" style="height:320px"></div>
+          </div>
+          <div class="col" style="width:320px">
+            <div class="result-summary">
+              <h4>Results</h4>
+              <div><strong>Input Bits:</strong> <span id="resInput">-</span></div>
+              <div><strong>Demod Bits:</strong> <span id="resDemod">-</span></div>
+              <div><strong>BER:</strong> <span id="resBER">-</span></div>
+              <div style="margin-top:10px">
+                <button id="btnDownload" class="btn">Download CSV</button>
+                <button id="btnReset" class="btn btn-secondary" style="margin-left:8px">Reset</button>
+              </div>
+              <div style="margin-top:12px" id="resExtra"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h3>Theory & Procedure</h3>
+        <div id="theory" class="doc"></div>
+        <h4>Procedure</h4>
+        <div id="procedure" class="doc"></div>
       </div>
     </main>
   </div>
 
-  <footer class="site-footer">
-    © 2025 [Your College Name] — Digital Communication Virtual Lab
-  </footer>
+  <footer class="footer">© 2025 Your College Name — Digital Communication Virtual Lab</footer>
 
   <script src="js/app.js"></script>
 </body>
